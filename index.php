@@ -1,6 +1,28 @@
 <?php
-include "koneksi.php"; 
+session_start();
+include "koneksi.php";
+
+$nama = "Guest";
+$foto = "img/default.png";
+
+if (isset($_SESSION['username'])) {
+    $username = $_SESSION['username'];
+
+    $stmt = $conn->prepare("SELECT username, foto FROM user WHERE username=?");
+    $stmt->bind_param("s", $username);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    if ($row = $result->fetch_assoc()) {
+        $nama = $row['username'];
+
+        if (!empty($row['foto']) && file_exists("img/".$row['foto'])) {
+            $foto = "img/".$row['foto'];
+        }
+    }
+}
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -103,31 +125,43 @@ include "koneksi.php";
 <!-- article end -->
     <!-- gallery begin -->
     <section id="gallery" class="text-center p-5 bg-danger-subtle">
-      <div class="container">
-        <h1 class="fw-bold display-4 pb-3">gallery</h1>
-        <div id="carouselExample" class="carousel slide">
-          <div class="carousel-inner">
-            <div class="carousel-item active">
-              <img src="img/galery1.jpg" class="d-block w-100" alt="..." />
-            </div>
-            <div class="carousel-item">
-              <img src="img/galery2.jpg" class="d-block w-100" alt="..." />
-            </div>
-            <div class="carousel-item">
-              <img src="img/galery3.jpg" class="d-block w-100" alt="..." />
-            </div>
+  <div class="container">
+    <h1 class="fw-bold display-4 pb-3">Gallery</h1>
+
+    <div id="carouselExample" class="carousel slide">
+      <div class="carousel-inner">
+        <?php
+        include "koneksi.php";
+
+        $sql = "SELECT * FROM gallery ORDER BY tanggal DESC";
+        $hasil = $conn->query($sql);
+
+        $active = "active"; // hanya untuk item pertama
+        while ($row = $hasil->fetch_assoc()) {
+            if ($row['gambar'] != '' && file_exists("img/".$row['gambar'])) {
+        ?>
+          <div class="carousel-item <?= $active ?>">
+            <img src="img/<?= $row['gambar'] ?>" class="d-block w-100" alt="gallery">
           </div>
-          <button class="carousel-control-prev" type="button" data-bs-target="#carouselExample" data-bs-slide="prev">
-            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-            <span class="visually-hidden">Previous</span>
-          </button>
-          <button class="carousel-control-next" type="button" data-bs-target="#carouselExample" data-bs-slide="next">
-            <span class="carousel-control-next-icon" aria-hidden="true"></span>
-            <span class="visually-hidden">Next</span>
-          </button>
-        </div>
+        <?php
+                $active = ""; // setelah pertama, tidak active lagi
+            }
+        }
+        ?>
       </div>
-    </section>
+
+      <button class="carousel-control-prev" type="button" data-bs-target="#carouselExample" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Previous</span>
+      </button>
+      <button class="carousel-control-next" type="button" data-bs-target="#carouselExample" data-bs-slide="next">
+        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Next</span>
+      </button>
+    </div>
+  </div>
+</section>
+
     <!-- gallery end -->
     <!-- schedule begin -->
     <section id="schedule" class="text-center p-5">
@@ -193,20 +227,20 @@ include "koneksi.php";
     <!-- schedule end -->
     <!-- about me begin -->
     <section id="aboutme" class="text-center p-5 bg-danger-subtle">
-      <div class="container">
-        <div class="d-sm-flex align-items-center justify-content-center">
-          <div class="p-3">
-            <img src="img/profil.jpg" class="rounded-circle border shadow" width="300" />
-          </div>
-          <div class="p-md-5 text-sm-start">
-            <h3 class="lead">A11.2024.15874</h3>
-            <h1 class="fw-bold">Ranggapesty Ajisaputra</h1>
-            Program Studi Teknik Informatika<br />
-            <a href="https://dinus.ac.id/" class="fw-bold text-decoration-none">Universitas Dian Nuswantoro</a>
-          </div>
-        </div>
+  <div class="container">
+    <div class="d-sm-flex align-items-center justify-content-center">
+      <div class="p-3">
+        <img src="<?= $foto ?>" class="rounded-circle border shadow" width="300" />
       </div>
-    </section>
+      <div class="p-md-5 text-sm-start">
+        <h1 class="fw-bold"><?= htmlspecialchars($nama) ?></h1>
+        <a href="https://dinus.ac.id/" class="fw-bold text-decoration-none">Universitas Dian Nuswantoro</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+
     <!-- about me end -->
     <!-- footer begin -->
     <footer id="footer" class="text-center p-5">

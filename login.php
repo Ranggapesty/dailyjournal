@@ -1,55 +1,39 @@
 <?php
-//memulai session atau melanjutkan session yang sudah ada
 session_start();
-
-//menyertakan code dari file koneksi
 include "koneksi.php";
 
-//check jika sudah ada user yang login arahkan ke halaman admin
 if (isset($_SESSION['username'])) { 
-	header("location:admin.php"); 
+    header("location:admin.php"); 
+    exit;
 }
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-  $username = $_POST['user'];
-  
-  //menggunakan fungsi enkripsi md5 supaya sama dengan password  yang tersimpan di database
-  $password = md5($_POST['pass']);
+    $username = $_POST['user'];
+    $password = $_POST['pass'];
 
-	//prepared statement
-  $stmt = $conn->prepare("SELECT username 
-                          FROM user 
-                          WHERE username=? AND password=?");
+    // ambil data user berdasarkan username saja
+    $stmt = $conn->prepare("SELECT username, password FROM user WHERE username=?");
+    $stmt->bind_param("s", $username);
+    $stmt->execute();
 
-	//parameter binding 
-  $stmt->bind_param("ss", $username, $password);//username string dan password string
-  
-  //database executes the statement
-  $stmt->execute();
-  
-  //menampung hasil eksekusi
-  $hasil = $stmt->get_result();
-  
-  //mengambil baris dari hasil sebagai array asosiatif
-  $row = $hasil->fetch_array(MYSQLI_ASSOC);
+    $hasil = $stmt->get_result();
+    $row = $hasil->fetch_assoc();
 
-  //check apakah ada baris hasil data user yang cocok
-  if (!empty($row)) {
-    //jika ada, simpan variable username pada session
-    $_SESSION['username'] = $row['username'];
+    // cek user ada & password cocok dengan hash
+    if ($row && password_verify($password, $row['password'])) {
+        $_SESSION['username'] = $row['username'];
+        header("location:admin.php");
+        exit;
+    } else {
+        header("location:login.php");
+        exit;
+    }
 
-    //mengalihkan ke halaman admin
-    header("location:admin.php");
-  } else {
-	  //jika tidak ada (gagal), alihkan kembali ke halaman login
-    header("location:login.php");
-  }
-
-	//menutup koneksi database
-  $stmt->close();
-  $conn->close();
+    $stmt->close();
+    $conn->close();
 } else {
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
